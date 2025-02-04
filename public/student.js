@@ -226,7 +226,7 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
             4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
             5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
             6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
-            Kết quả trả về cần có định dạng sau:
+            Kết quả trả về cần có định dạng sau (Sau mỗi mục thì xuống dòng):
             Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
             Lời giải chi tiết: [Lời giải từng bước]
             Chấm điểm: [Giải thích cách chấm điểm cho từng phần]

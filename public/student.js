@@ -227,12 +227,12 @@ async function makeApiRequest(apiUrl, requestBody) {
             5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
             6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
             Kết quả trả về cần có định dạng sau:
-            Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
-            Lời giải chi tiết: [Lời giải từng bước]
-            Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
-            Điểm số: [Điểm trên thang điểm 10]
-            Nhận xét: [Nhận xét chi tiết]
-            Đề xuất cải thiện: [Các đề xuất cụ thể]
+            1. Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
+            2. Lời giải chi tiết: [Lời giải từng bước]
+            3. Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
+            4. Điểm số: [Điểm trên thang điểm 10]
+            5. Nhận xét: [Nhận xét chi tiết]
+            6. Đề xuất cải thiện: [Các đề xuất cụ thể]
             Chú ý:
 	    - Bài làm của học sinh không khớp với đề bài thì cho 0 điểm,
             - Điểm số phải là một số từ 0 đến 10, có thể có một chữ số thập phân.

@@ -185,7 +185,33 @@ document.addEventListener("DOMContentLoaded", async function () {
     await loadApiKeys(); // Tải API keys khi trang được tải
     await initStudentPage();
 });
+// Hàm gửi yêu cầu API với API key
+async function makeApiRequest(apiUrl, requestBody) {
+    let attempts = 0;
+    while (attempts < apiKeys.length) {
+        const apiKey = getNextApiKey(); // Lấy API key từ danh sách
+        try {
+            const response = await fetch(`${apiUrl}?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+            });
 
+            if (response.ok) {
+                return await response.json();
+            } else if (response.status === 403) {
+                console.log(`API key expired: ${apiKey}`);
+                attempts++;
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('API error:', error);
+            attempts++;
+        }
+    }
+    throw new Error('All API keys exhausted.');
+}
 // Hàm gọi API Gemini để chấm bài
 async function gradeWithGemini(base64Image, problemText, studentId) {
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';

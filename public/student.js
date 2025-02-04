@@ -213,58 +213,88 @@ async function makeApiRequest(apiUrl, requestBody) {
     throw new Error('All API keys exhausted.');
 }
 // Hàm gọi API Gemini để chấm bài
- async function gradeWithGemini(base64Image, problemText, studentId) {
-            const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
-            const promptText = `
-            Học sinh: ${studentId}
-            Đề bài:
-            ${problemText}
-             Hãy thực hiện các bước sau:
-            1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
-            2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
-            3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
-            4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
-            5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
-            6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
-            Kết quả trả về cần có định dạng sau, hết một mục thì ngắt dòng:
-            1. Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
-            2. Lời giải chi tiết: [Lời giải từng bước]
-            3. Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
-            4. Điểm số: [Điểm trên thang điểm 10]
-            5. Nhận xét: [Nhận xét chi tiết]
-            6. Đề xuất cải thiện: [Các đề xuất cụ thể]
-            Chú ý:
-	    - Bài làm của học sinh không khớp với đề bài thì cho 0 điểm,
-            - Điểm số phải là một số từ 0 đến 10, có thể có một chữ số thập phân.
-            - Hãy đảm bảo tính chính xác và khách quan trong việc chấm điểm và nhận xét.
-            - Nếu có sự không nhất quán giữa bài làm và điểm số, hãy giải thích rõ lý do.
-            `;
-            const requestBody = {
-                contents: [
-                    {
-                        parts: [
-                            { text: promptText },
-                            { inline_data: { mime_type: "image/jpeg", data: base64Image } }
-                        ]
-                    }
-                ]
-            };            
-            try {
-                const data = await makeApiRequest(apiUrl, requestBody);
-                const response = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!response) {
-                    throw new Error('Không nhận được phản hồi hợp lệ từ API');
-                }
-                const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
-                const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
-                const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-                return { studentAnswer, feedback, score };
+async function gradeWithGemini(base64Image, problemText, studentId) {
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
+    
+    // Prompt yêu cầu AI trả về đúng 6 dòng
+    const promptText = `
+    Học sinh: ${studentId}
+    Đề bài:
+    ${problemText}
+    
+    Hãy thực hiện các bước sau:
+    1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh.
+    2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
+    3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả.
+    4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
+    5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
+    6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
+    
+    🚨 KẾT QUẢ PHẢI TRẢ VỀ ĐÚNG 6 DÒNG, THEO ĐỊNH DẠNG SAU:
+    1. Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
+    2. Lời giải chi tiết: [Lời giải từng bước]
+    3. Chấm điểm chi tiết: [Giải thích cách chấm điểm]
+    4. Điểm số: [Điểm trên thang điểm 10]
+    5. Nhận xét: [Nhận xét chi tiết]
+    6. Đề xuất cải thiện: [Các đề xuất cụ thể]
 
-            } catch (error) {
-                console.error('Lỗi:', error);
-                return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
+    ❗Nếu không thể nhận diện hình ảnh hoặc có lỗi, hãy trả về "Không thể xử lý".
+    ❗Điểm số phải là số từ 0 đến 10, có thể có một chữ số thập phân.
+    ❗Nếu có sự không nhất quán giữa bài làm và điểm số, hãy giải thích rõ lý do.
+    `;
+
+    const requestBody = {
+        contents: [
+            {
+                parts: [
+                    { text: promptText },
+                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
+                ]
             }
+        ]
+    };
+
+    try {
+        const data = await makeApiRequest(apiUrl, requestBody);
+        const response = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!response) {
+            throw new Error('Không nhận được phản hồi hợp lệ từ API');
         }
+
+        // Chia kết quả thành các dòng riêng biệt
+        const lines = response.split("\n").map(line => line.trim()).filter(line => line !== "");
+
+        // Đảm bảo có đủ 6 dòng, nếu không thì gán giá trị mặc định
+        const studentAnswer = lines[0]?.replace("Bài làm của học sinh:", "").trim() || "Không thể xử lý";
+        const detailedSolution = lines[1]?.replace("Lời giải chi tiết:", "").trim() || "Không thể xử lý";
+        const gradingDetails = lines[2]?.replace("Chấm điểm chi tiết:", "").trim() || "Không thể xử lý";
+        const score = parseFloat(lines[3]?.replace("Điểm số:", "").trim()) || 0;
+        const feedback = lines[4]?.replace("Nhận xét:", "").trim() || "Không thể xử lý";
+        const suggestions = lines[5]?.replace("Đề xuất cải thiện:", "").trim() || "Không thể xử lý";
+
+        return {
+            studentAnswer,
+            detailedSolution,
+            gradingDetails,
+            score,
+            feedback,
+            suggestions
+        };
+
+    } catch (error) {
+        console.error('Lỗi:', error);
+        return {
+            studentAnswer: "Lỗi xử lý",
+            detailedSolution: "Lỗi xử lý",
+            gradingDetails: "Lỗi xử lý",
+            score: 0,
+            feedback: `Đã xảy ra lỗi: ${error.message}`,
+            suggestions: "Lỗi xử lý"
+        };
+    }
+}
+
 // Hàm khi nhấn nút "Chấm bài"
 document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!currentProblem) {

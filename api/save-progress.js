@@ -1,62 +1,32 @@
-const fetch = require('node-fetch');
-const { stringify } = require('flatted'); // Dùng flatted để xử lý vòng lặp (nếu cần)
+// api/get-progress.js (Sử dụng ESM trong trình duyệt)
+export default async function handler(req, res) {
+    const { studentId } = req.query;
 
-// Lấy GITHUB_TOKEN từ biến môi trường
-const githubToken = process.env.GITHUB_TOKEN;
-const repo = "OnToanAnhDuong/LuyenToan6";
-const filePath = "data/progress.json";
-const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+    if (!studentId) {
+        return res.status(400).json({ message: "❌ Thiếu `studentId` trong yêu cầu!" });
+    }
 
-async function saveProgress(progressData) {
+    const GITHUB_PROGRESS_URL = "https://raw.githubusercontent.com/OnToanAnhDuong/LuyenToan6/main/data/progress.json";
+
     try {
-        // Kiểm tra dữ liệu đầu vào để tránh vòng lặp
-        console.log("Progress Data:", progressData);
+        console.log(`📥 Đang lấy tiến trình của học sinh ${studentId} từ GitHub...`);
 
-        // Loại bỏ các thuộc tính không cần thiết hoặc không thể stringify
-        const cleanedProgressData = {
-            ...progressData,  // Làm sạch dữ liệu (nếu cần)
-        };
-
-        // Lấy thông tin hiện tại từ GitHub
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${githubToken}`,
-                'Accept': 'application/vnd.github.v3.raw',
-            }
-        });
-
-        const existingData = await response.json();
-        const sha = existingData.sha;  // Lấy sha của file để cập nhật
-
-        // Mã hóa nội dung thành base64 sử dụng Buffer (Node.js)
-        const base64Content = Buffer.from(stringify(cleanedProgressData)).toString('base64');
-
-        const updatedData = {
-            message: "Cập nhật tiến trình học sinh",
-            content: base64Content,  // Mã hóa nội dung thành base64
-            sha: sha,
-        };
-
-        // Cập nhật tiến trình học sinh lên GitHub
-        const updateResponse = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${githubToken}`,
-                'Accept': 'application/vnd.github.v3.raw',
-            },
-            body: JSON.stringify(updatedData),
-        });
-
-        if (!updateResponse.ok) {
-            throw new Error('Không thể lưu tiến trình học sinh');
+        const response = await fetch(GITHUB_PROGRESS_URL);
+        if (!response.ok) {
+            throw new Error(`❌ Lỗi khi lấy dữ liệu từ GitHub: ${response.statusText}`);
         }
 
-        console.log('✅ Tiến trình đã được lưu thành công!');
+        const data = await response.json();
+
+        if (!data[studentId]) {
+            return res.status(404).json({ message: `❌ Không tìm thấy tiến trình cho học sinh ${studentId}.` });
+        }
+
+        console.log(`✅ Tiến trình của học sinh ${studentId}:`, data[studentId]);
+        return res.status(200).json(data[studentId]);
+
     } catch (error) {
-        console.error('Lỗi khi lưu tiến trình:', error);
+        console.error("❌ Lỗi khi lấy tiến trình:", error);
+        return res.status(500).json({ message: "❌ Lỗi hệ thống khi lấy tiến trình học sinh." });
     }
 }
-
-// Xuất hàm saveProgress dưới dạng CommonJS
-module.exports = saveProgress;

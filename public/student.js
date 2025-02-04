@@ -240,28 +240,28 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
 
     try {
         const data = await makeApiRequest(apiUrl, requestBody);
-        const response = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        // Kiểm tra nếu response không có giá trị hợp lệ
+        // Kiểm tra nếu API trả về nội dung hợp lệ
+        const response = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
         if (!response) {
             throw new Error('Không nhận được phản hồi hợp lệ từ API');
         }
 
-        // Tách các phần của bài làm học sinh và phần chấm điểm
-        const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
-        const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
-        const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-
-        // Kết hợp tất cả kết quả thành một chuỗi duy nhất
-        const resultContent = `
-            <strong>Bài làm của học sinh:</strong><br>${studentAnswer}<br><br>
-            <strong>Lời giải chi tiết:</strong><br>${feedback}<br><br>
-            <strong>Điểm số:</strong> ${score}/10<br><br>
-            <strong>Nhận xét:</strong><br> ${response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1] || ''}<br><br>
-            <strong>Đề xuất cải thiện:</strong><br> ${response.match(/Đề xuất cải thiện: ([\s\S]*)/)?.[1] || ''}
-        `;
+        // Trích xuất các phần tử từ phản hồi, đảm bảo không bị lỗi nếu dữ liệu không tồn tại
+        const studentAnswer = (response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1] || '').trim();
+        const feedback = (response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '') || '').trim();
+        const score = parseFloat((response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0'));
 
         // Cập nhật nội dung vào div kết quả
+        const resultContent = `
+            <strong>Bài làm của học sinh:</strong><br>${studentAnswer || 'Không có bài làm.'}<br><br>
+            <strong>Lời giải chi tiết:</strong><br>${feedback || 'Không có lời giải chi tiết.'}<br><br>
+            <strong>Điểm số:</strong> ${score}/10<br><br>
+            <strong>Nhận xét:</strong><br> ${response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1] || 'Không có nhận xét.'}<br><br>
+            <strong>Đề xuất cải thiện:</strong><br> ${response.match(/Đề xuất cải thiện: ([\s\S]*)/)?.[1] || 'Không có đề xuất cải thiện.'}
+        `;
+
         document.getElementById("result").innerHTML = resultContent;
 
     } catch (error) {

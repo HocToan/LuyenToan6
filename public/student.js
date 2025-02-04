@@ -1,15 +1,16 @@
-// student.js
+// student.js (Sử dụng ESM)
 
-let currentKeyIndex = 0;
-let apiKeys = [];
-let base64Image = "";
-let progressData = {};
-let currentProblem = null;
+let currentKeyIndex = 0;  // Biến để theo dõi API key đang sử dụng
+let apiKeys = [];  // Biến lưu API keys
+
+let base64Image = ""; // Biến toàn cục để lưu ảnh bài làm
+let progressData = {}; // Biến lưu tiến trình học sinh
+let currentProblem = null; // Biến lưu bài tập hiện tại
 
 // Tải API keys từ server
 async function loadApiKeys() {
     try {
-        const response = await fetch('/api/get-api-keys');
+        const response = await fetch('/api/get-api-keys'); // Gọi API get-api-keys
         if (!response.ok) {
             throw new Error('Không thể tải API keys');
         }
@@ -39,7 +40,7 @@ async function initStudentPage() {
     console.log(`🔹 Đang tải dữ liệu học sinh: ${studentId}`);
     await loadStudentData(studentId);
     await loadProblems();
-    await loadProgress(studentId);
+    await loadProgress(studentId);  // Đảm bảo loadProgress được gọi đúng
     console.log("✅ Trang học sinh đã khởi tạo hoàn tất!");
 }
 
@@ -50,7 +51,7 @@ const loadStudentData = async (studentId) => {
         if (!response.ok) {
             throw new Error("Không thể tải danh sách học sinh.");
         }
-        const studentsObject = await response.json();
+        const studentsObject = await response.json();  // Lấy dữ liệu từ API
 
         const students = Object.keys(studentsObject).map(key => ({
             id: key,
@@ -75,7 +76,7 @@ const loadProblems = async () => {
         }
         const problems = await response.json();
         console.log("✅ Danh sách bài tập:", problems);
-        displayProblemList(problems);
+        displayProblemList(problems); // Sử dụng hàm displayProblemList
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách bài tập:", error);
     }
@@ -116,6 +117,72 @@ function displayProblemList(problems) {
     console.log("✅ Danh sách bài tập đã cập nhật.");
 }
 
+// Hiển thị nội dung bài tập khi học sinh chọn bài
+function displayProblem(problem) {
+    document.getElementById("problemText").innerHTML = problem.problem; // Hiển thị đề bài
+    currentProblem = problem; // Lưu bài tập hiện tại
+    MathJax.typesetPromise([document.getElementById("problemText")]).catch(err => console.error("MathJax lỗi:", err));
+}
+
+// Tải tiến trình học sinh
+async function loadProgress(studentId) {
+    try {
+        const response = await fetch(`/api/get-progress?studentId=${studentId}`);
+        const progress = await response.json();
+        progressData = progress || {}; // Lưu vào biến toàn cục
+        console.log(`✅ Tiến trình của học sinh ${studentId}:`, progressData);
+        updateProgressUI();
+    } catch (error) {
+        console.error("❌ Lỗi khi tải tiến trình:", error);
+    }
+}
+
+// Cập nhật tiến trình UI
+function updateProgressUI() {
+    document.getElementById("completedExercises").textContent = progressData.completedExercises || 0;
+    document.getElementById("averageScore").textContent = progressData.averageScore || 0;
+}
+
+// Lưu tiến trình học sinh vào `progress.json`
+async function saveProgress(studentId, score) {
+    try {
+        let completedExercises = progressData.completedExercises || 0;
+        let totalScore = (progressData.averageScore || 0) * completedExercises;
+        completedExercises += 1;
+        let averageScore = (totalScore + score) / completedExercises;
+
+        progressData.completedExercises = completedExercises;
+        progressData.averageScore = averageScore;
+
+        await fetch("/api/save-progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId, completedExercises, averageScore })
+        });
+
+        console.log(`✅ Tiến trình đã được cập nhật: ${completedExercises} bài, Điểm TB: ${averageScore.toFixed(2)}`);
+    } catch (error) {
+        console.error("❌ Lỗi khi lưu tiến trình:", error);
+    }
+}
+
+// Chuyển đổi ảnh thành Base64
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Hàm lấy API key tiếp theo từ danh sách
+function getNextApiKey() {
+    const apiKey = apiKeys[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+    return apiKey;
+}
+
 // Hàm gọi API Gemini để chấm bài
 async function gradeWithGemini(base64Image, problemText, studentId) {
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
@@ -149,22 +216,12 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         }
         const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
         const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
-        const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
+                const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
         return { studentAnswer, feedback, score };
     } catch (error) {
         console.error('Lỗi:', error);
         return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
     }
-}
-
-// Chuyển đổi ảnh thành Base64
-function getBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.onerror = error => reject(error);
-    });
 }
 
 // Hàm khi nhấn nút "Chấm bài"
@@ -195,6 +252,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     try {
         document.getElementById("result").innerText = "🔄 Đang chấm bài...";
 
+        // Gọi lại hàm gradeWithGemini đã có
         const { studentAnswer, feedback, score } = await gradeWithGemini(base64Image, problemText, studentId);
         await saveProgress(studentId, score);
 
@@ -210,7 +268,3 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     }
 });
 
-document.addEventListener("DOMContentLoaded", async function () {
-    await loadApiKeys(); // Tải API keys khi trang được tải
-    await initStudentPage();
-});

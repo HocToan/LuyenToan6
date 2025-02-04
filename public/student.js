@@ -219,26 +219,12 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         Học sinh: ${studentId}
         Đề bài:
         ${problemText}
-       Hãy thực hiện các bước sau:
-            1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
-            2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
-            3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
-            4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
-            5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
-            6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
-            Kết quả trả về cần có định dạng sau:
-            Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
-            Lời giải chi tiết: [Lời giải từng bước]
-            Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
-            Điểm số: [Điểm trên thang điểm 10]
-            Nhận xét: [Nhận xét chi tiết]
-            Đề xuất cải thiện: [Các đề xuất cụ thể]
-            Chú ý:
-	    - Bài làm của học sinh không khớp với đề bài thì cho 0 điểm,
-            - Điểm số phải là một số từ 0 đến 10, có thể có một chữ số thập phân.
-            - Hãy đảm bảo tính chính xác và khách quan trong việc chấm điểm và nhận xét.
-            - Nếu có sự không nhất quán giữa bài làm và điểm số, hãy giải thích rõ lý do.
-            `;
+        Hãy thực hiện các bước sau:
+        1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác.
+        2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần.
+        3. Chấm điểm bài làm của học sinh.
+        4. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
+    `;
     const requestBody = {
         contents: [
             {
@@ -252,88 +238,69 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
 
     try {
         const data = await makeApiRequest(apiUrl, requestBody);
-        
-        // Kiểm tra phản hồi và đảm bảo có cấu trúc dữ liệu hợp lệ
-        const response = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''; // Nếu không có dữ liệu, dùng chuỗi rỗng
+        const response = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        const studentAnswer = (response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1] || '').trim();
-        const feedback = (response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '') || '').trim();
-        const score = parseFloat((response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0'));
+        if (!response) {
+            throw new Error('Không nhận được phản hồi hợp lệ từ API');
+        }
 
-        // Trả về kết quả hoặc các giá trị mặc định nếu không có dữ liệu
-        return {
-            studentAnswer: studentAnswer || 'Không có bài làm.',
-            feedback: feedback || 'Không có lời giải chi tiết.',
-            score: score || 0
-        };
+        // Kiểm tra và tách các phần trả về từ API
+        const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || 'Không có bài làm';
+        const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '').replace(/Chấm điểm: [\s\S]*?\n/, '');
+        const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
+        const comments = response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1]?.trim() || 'Không có nhận xét';
+        const improvementSuggestions = response.match(/Đề xuất cải thiện: ([\s\S]*)/)?.[1]?.trim() || 'Không có đề xuất cải thiện';
+
+        return { studentAnswer, feedback, score, comments, improvementSuggestions };
 
     } catch (error) {
-        console.error('Lỗi khi chấm bài:', error);
-        return {
-            studentAnswer: 'Không có bài làm.',
-            feedback: `Đã xảy ra lỗi: ${error.message}`,
-            score: 0
-        };
+        console.error('Lỗi:', error);
+        return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0, comments: '', improvementSuggestions: '' };
     }
 }
-
-// Hàm khi nhấn nút "Chấm bài"
-document.getElementById("submitBtn").addEventListener("click", async () => {
-    if (!currentProblem) {
-        alert("⚠ Vui lòng chọn bài tập trước khi chấm.");
-        return;
-    }
-
-    const studentId = localStorage.getItem("studentId");
-    const problemText = document.getElementById("problemText").innerText.trim();
-    const studentFileInput = document.getElementById("studentImage");
+document.getElementById('submitBtn').addEventListener('click', async () => {
+    const problemText = document.getElementById('problemText').innerHTML.trim();
+    const studentFileInput = document.getElementById('studentImage');
 
     if (!problemText) {
-        alert("⚠ Đề bài chưa được tải.");
+        alert('Vui lòng đợi đề bài được tải.');
         return;
     }
 
     if (!base64Image && studentFileInput.files.length === 0) {
-        alert("⚠ Vui lòng tải lên ảnh bài làm hoặc chụp ảnh từ camera.");
+        alert('Vui lòng chọn hoặc chụp ảnh bài làm của học sinh.');
         return;
     }
 
-    if (!base64Image && studentFileInput.files.length > 0) {
-        base64Image = await getBase64(studentFileInput.files[0]);
+    const imageToProcess = base64Image || (studentFileInput.files.length > 0 ? await getBase64(studentFileInput.files[0]) : null);
+    if (!imageToProcess) {
+        alert('Không thể lấy ảnh bài làm. Vui lòng thử lại.');
+        return;
     }
 
     try {
-        document.getElementById("result").innerText = "🔄 Đang chấm bài...";
+        document.getElementById('result').innerText = 'Đang xử lý...';
 
-        // Gọi lại hàm gradeWithGemini và đảm bảo kết quả trả về hợp lệ
-        const { studentAnswer, feedback, score } = await gradeWithGemini(base64Image, problemText, studentId);
+        // Gửi ảnh để chấm bài
+        const { studentAnswer, feedback, score, comments, improvementSuggestions } = await gradeWithGemini(imageToProcess, problemText, currentStudentId);
 
         // Hiển thị kết quả chấm bài
-        const resultContainer = document.getElementById("result");
-
-        resultContainer.innerHTML = `
-            <strong>Bài giải của học sinh:</strong><br>${studentAnswer || 'Không có bài giải được nhận diện.'}<br><br>
-            <strong>Lời giải chi tiết:</strong><br>${feedback || 'Không có lời giải chi tiết.'}<br><br>
-            <strong>Chấm điểm:</strong><br>${studentAnswer ? 'So sánh bài làm với đáp án và tính điểm.' : 'Bài làm không khớp với đề bài, không chấm điểm.'}<br><br>
-            <strong>Điểm số:</strong> <span style="font-size: 1.5em; font-weight: bold; color: #4CAF50;">${score}/10</span><br><br>
-            <strong>Nhận xét:</strong><br>${score < 5 ? 'Bài làm cần cải thiện nhiều.' : 'Bài làm khá tốt, cần chú ý các chi tiết nhỏ.'}<br><br>
-            <strong>Đề xuất cải thiện:</strong><br>Ôn lại kiến thức về phần còn thiếu, luyện thêm bài tập tương tự.
+        document.getElementById('result').innerHTML = `
+            <strong>Bài giải của học sinh:</strong><br>${studentAnswer}<br><br>
+            <strong>Lời giải chi tiết:</strong><br>${feedback}<br><br>
+            <strong>Chấm điểm:</strong><br>${comments}<br><br>
+            <strong>Điểm số:</strong> <span style="color: #4CAF50; font-weight: bold;">${score}/10</span><br><br>
+            <strong>Nhận xét:</strong><br>${comments}<br><br>
+            <strong>Đề xuất cải thiện:</strong><br>${improvementSuggestions}
         `;
 
-        // Render lại MathJax nếu có công thức toán học
-        MathJax.typesetPromise([resultContainer]).catch(err => console.error("MathJax rendering error:", err));
-
+        MathJax.typesetPromise([document.getElementById('result')]).catch(err => console.error('MathJax rendering error:', err));
         alert(`✅ Bài tập đã được chấm! Bạn đạt ${score}/10 điểm.`);
 
-        // Cập nhật tiến trình
-        progressData[currentProblem.index] = true;
-        updateProgressUI();
-
     } catch (error) {
-        console.error("❌ Lỗi khi chấm bài:", error);
-        document.getElementById("result").innerText = `Lỗi: ${error.message}`;
+        console.error('Lỗi:', error);
+        document.getElementById('result').innerText = `Đã xảy ra lỗi: ${error.message}. Vui lòng thử lại sau.`;
     }
 });
-
 
 

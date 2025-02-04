@@ -239,29 +239,20 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
 
     try {
         const data = await makeApiRequest(apiUrl, requestBody);
-        console.log("Data from Gemini API:", data);
         const response = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
         if (!response) {
             throw new Error('Không nhận được phản hồi hợp lệ từ API');
         }
-
         const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
         const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
         const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-
-        // Cập nhật các phần tử trong HTML để hiển thị kết quả chính xác
-        document.getElementById("studentAnswer").innerText = studentAnswer;
-        document.getElementById("feedback").innerText = feedback;
-        document.getElementById("score").innerText = `Điểm: ${score}/10`;
-
         return { studentAnswer, feedback, score };
-
     } catch (error) {
         console.error('Lỗi:', error);
         return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
     }
 }
+
 // Hàm khi nhấn nút "Chấm bài"
 document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!currentProblem) {
@@ -288,14 +279,13 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     }
 
     try {
-        document.getElementById("result").innerText = "🔄 Đang chấm bài...";
-
+         document.getElementById("result").innerText = "🔄 Đang chấm bài...";
+        // Gọi lại hàm gradeWithGemini đã có
         const { studentAnswer, feedback, score } = await gradeWithGemini(base64Image, problemText, studentId);
-        
-        // Hiển thị kết quả
-        document.getElementById("studentAnswer").innerText = studentAnswer;
-        document.getElementById("feedback").innerText = feedback;
-        document.getElementById("score").innerText = `Điểm: ${score}/10`;
+        await saveProgress(studentId, score);
+
+        document.getElementById("result").innerHTML = feedback;
+        MathJax.typesetPromise([document.getElementById("result")]).catch(err => console.error("MathJax lỗi:", err));
 
         alert(`✅ Bài tập đã được chấm! Bạn đạt ${score}/10 điểm.`);
         progressData[currentProblem.index] = true;
@@ -305,3 +295,4 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
         document.getElementById("result").innerText = `Lỗi: ${error.message}`;
     }
 });
+

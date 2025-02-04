@@ -1,5 +1,3 @@
-// student.js (Sử dụng ESM)
-
 let currentKeyIndex = 0;  // Biến để theo dõi API key đang sử dụng
 let apiKeys = [];  // Biến lưu API keys
 
@@ -40,7 +38,7 @@ async function initStudentPage() {
     console.log(`🔹 Đang tải dữ liệu học sinh: ${studentId}`);
     await loadStudentData(studentId);
     await loadProblems();
-    await loadProgress(studentId);  // Đảm bảo loadProgress được gọi đúng
+    await loadProgress(studentId);
     console.log("✅ Trang học sinh đã khởi tạo hoàn tất!");
 }
 
@@ -76,7 +74,7 @@ const loadProblems = async () => {
         }
         const problems = await response.json();
         console.log("✅ Danh sách bài tập:", problems);
-        displayProblemList(problems); // Sử dụng hàm displayProblemList
+        displayProblemList(problems);
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách bài tập:", error);
     }
@@ -183,6 +181,11 @@ function getNextApiKey() {
     return apiKey;
 }
 
+document.addEventListener("DOMContentLoaded", async function () {
+    await loadApiKeys(); // Tải API keys khi trang được tải
+    await initStudentPage();
+});
+
 // Hàm gọi API Gemini để chấm bài
 async function gradeWithGemini(base64Image, problemText, studentId) {
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
@@ -216,7 +219,7 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         }
         const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
         const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
-                const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
+        const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
         return { studentAnswer, feedback, score };
     } catch (error) {
         console.error('Lỗi:', error);

@@ -1,7 +1,6 @@
-// student.js
+// student.js (Sử dụng ESM)
 
-// Import API keys từ get-api-keys.js (Sử dụng CommonJS)
-const apiKeys = require('../api/get-api-keys');  // Đảm bảo đường dẫn đúng với cấu trúc dự án của bạn
+import { apiKeys } from '../api/get-api-keys.js';  // Đảm bảo đường dẫn đúng với cấu trúc dự án của bạn
 
 let currentKeyIndex = 0;  // Biến để theo dõi API key đang sử dụng
 
@@ -12,7 +11,7 @@ if (apiKeys.length === 0) {
     console.log(`Có ${apiKeys.length} API keys hợp lệ.`);
 }
 
-let base64Image = ""; // 🌟 Biến toàn cục để lưu ảnh bài làm
+let base64Image = ""; // Biến toàn cục để lưu ảnh bài làm
 
 document.addEventListener("DOMContentLoaded", async function () {
     await initStudentPage();
@@ -33,7 +32,7 @@ async function initStudentPage() {
     console.log("✅ Trang học sinh đã khởi tạo hoàn tất!");
 }
 
-// 🌟 1. Hàm tải dữ liệu học sinh từ `students.json`
+// Hàm tải dữ liệu học sinh từ `students.json`
 const loadStudentData = async (studentId) => {
     try {
         const response = await fetch('/api/get-students');
@@ -61,7 +60,7 @@ const loadStudentData = async (studentId) => {
     }
 };
 
-// 🌟 2. Hàm tải danh sách bài tập từ `problems.json`
+// Hàm tải danh sách bài tập từ `problems.json`
 const loadProblems = async () => {
     try {
         const response = await fetch('/api/get-problems');
@@ -76,7 +75,7 @@ const loadProblems = async () => {
     }
 };
 
-// 🌟 3. Hiển thị danh sách bài tập
+// Hiển thị danh sách bài tập
 function displayProblemList(problems) {
     const problemContainer = document.getElementById("problemList");
     problemContainer.innerHTML = ""; // Xóa danh sách cũ nếu có
@@ -111,14 +110,14 @@ function displayProblemList(problems) {
     console.log("✅ Danh sách bài tập đã cập nhật.");
 }
 
-// 🌟 4. Hiển thị nội dung bài tập khi học sinh chọn bài
+// Hiển thị nội dung bài tập khi học sinh chọn bài
 function displayProblem(problem) {
     document.getElementById("problemText").innerHTML = problem.problem; // Hiển thị đề bài
     currentProblem = problem; // Lưu bài tập hiện tại
     MathJax.typesetPromise([document.getElementById("problemText")]).catch(err => console.error("MathJax lỗi:", err));
 }
 
-// 🌟 5. Tải tiến trình học sinh từ `progress.json`
+// Tải tiến trình học sinh từ `progress.json`
 async function loadProgress(studentId) {
     try {
         const response = await fetch(`/api/get-progress?studentId=${studentId}`);
@@ -131,13 +130,13 @@ async function loadProgress(studentId) {
     }
 }
 
-// 🌟 6. Cập nhật tiến trình UI (số bài đã làm & điểm TB)
+// Cập nhật tiến trình UI (số bài đã làm & điểm TB)
 function updateProgressUI() {
     document.getElementById("completedExercises").textContent = progressData.completedExercises || 0;
     document.getElementById("averageScore").textContent = progressData.averageScore || 0;
 }
 
-// 🌟 7. Sự kiện nút "Chấm bài"
+// Sự kiện nút "Chấm bài"
 document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!currentProblem) {
         alert("⚠ Vui lòng chọn bài tập trước khi chấm.");
@@ -180,7 +179,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     }
 });
 
-// 🌟 8. Lưu tiến trình học sinh vào `progress.json`
+// Lưu tiến trình học sinh vào `progress.json`
 async function saveProgress(studentId, score) {
     try {
         let completedExercises = progressData.completedExercises || 0;
@@ -203,7 +202,7 @@ async function saveProgress(studentId, score) {
     }
 }
 
-// 🌟 9. Chuyển đổi ảnh thành Base64
+// Chuyển đổi ảnh thành Base64
 function getBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();

@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const { stringify } = require('flatted'); // Nếu cần xử lý vòng lặp
+const { stringify } = require('flatted'); // Dùng flatted để xử lý vòng lặp (nếu cần)
 
 // Lấy GITHUB_TOKEN từ biến môi trường
 const githubToken = process.env.GITHUB_TOKEN;
@@ -17,6 +17,7 @@ async function saveProgress(progressData) {
             ...progressData,  // Làm sạch dữ liệu (nếu cần)
         };
 
+        // Lấy thông tin hiện tại từ GitHub
         const response = await fetch(apiUrl, {
             method: 'GET',
             headers: {
@@ -28,12 +29,16 @@ async function saveProgress(progressData) {
         const existingData = await response.json();
         const sha = existingData.sha;  // Lấy sha của file để cập nhật
 
+        // Mã hóa nội dung thành base64 sử dụng Buffer (Node.js)
+        const base64Content = Buffer.from(stringify(cleanedProgressData)).toString('base64');
+
         const updatedData = {
             message: "Cập nhật tiến trình học sinh",
-            content: btoa(stringify(cleanedProgressData)),  // Mã hóa nội dung thành base64
+            content: base64Content,  // Mã hóa nội dung thành base64
             sha: sha,
         };
 
+        // Cập nhật tiến trình học sinh lên GitHub
         const updateResponse = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
@@ -53,4 +58,5 @@ async function saveProgress(progressData) {
     }
 }
 
+// Xuất hàm saveProgress dưới dạng CommonJS
 module.exports = saveProgress;

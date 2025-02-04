@@ -28,8 +28,24 @@ async function loadApiKeys() {
     }
 }
 
-// Tải dữ liệu học sinh
-async function loadStudentData(studentId) {
+// Hàm khởi tạo trang học sinh
+async function initStudentPage() {
+    const studentId = localStorage.getItem("studentId");
+    if (!studentId) {
+        alert("⚠ Bạn chưa đăng nhập! Vui lòng đăng nhập lại.");
+        window.location.href = "index.html"; // Chuyển hướng về trang đăng nhập
+        return;
+    }
+
+    console.log(`🔹 Đang tải dữ liệu học sinh: ${studentId}`);
+    await loadStudentData(studentId);
+    await loadProblems();
+    await loadProgress(studentId);
+    console.log("✅ Trang học sinh đã khởi tạo hoàn tất!");
+}
+
+// Hàm tải dữ liệu học sinh từ `students.json`
+const loadStudentData = async (studentId) => {
     try {
         const response = await fetch('/api/get-students');
         if (!response.ok) {
@@ -49,10 +65,10 @@ async function loadStudentData(studentId) {
         console.error("❌ Lỗi khi tải danh sách học sinh:", error);
         return [];
     }
-}
+};
 
-// Tải danh sách bài tập
-async function loadProblems() {
+// Hàm tải danh sách bài tập từ `problems.json`
+const loadProblems = async () => {
     try {
         const response = await fetch('/api/get-problems');
         if (!response.ok) {
@@ -64,7 +80,7 @@ async function loadProblems() {
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách bài tập:", error);
     }
-}
+};
 
 // Hiển thị danh sách bài tập
 function displayProblemList(problems) {

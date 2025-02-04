@@ -1,8 +1,7 @@
-// api/get-students.js (Sử dụng CommonJS)
+// api/get-students.js (Sử dụng ESM)
+import { Octokit } from "@octokit/rest";
 
-const { Octokit } = require("@octokit/rest");  // Dùng require thay cho import
-
-async function handler(req, res) {
+export default async function handler(req, res) {
     try {
         const githubToken = process.env.GITHUB_TOKEN;
         if (!githubToken) {
@@ -13,7 +12,7 @@ async function handler(req, res) {
         const repo = "OnToanAnhDuong/LuyenToan6";
         const filePath = "data/students.json";
 
-        // 🔍 Lấy dữ liệu từ GitHub
+        // Lấy dữ liệu từ GitHub
         const { data } = await octokit.repos.getContent({
             owner: "OnToanAnhDuong",
             repo: "LuyenToan6",
@@ -31,6 +30,3 @@ async function handler(req, res) {
         res.status(500).json({ error: "❌ Không thể tải danh sách học sinh." });
     }
 }
-
-// Xuất hàm handler dưới dạng CommonJS
-module.exports = handler;

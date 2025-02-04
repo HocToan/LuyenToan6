@@ -1,8 +1,5 @@
-// api/get-progress.js (Sử dụng CommonJS)
-
-const fetch = require('node-fetch');  // Đảm bảo đã cài đặt node-fetch nếu chưa có
-
-async function handler(req, res) {
+// api/get-progress.js (Sử dụng ESM)
+export default async function handler(req, res) {
     const { studentId } = req.query;
 
     if (!studentId) {
@@ -35,6 +32,3 @@ async function handler(req, res) {
         return res.status(500).json({ message: "❌ Lỗi hệ thống khi lấy tiến trình học sinh." });
     }
 }
-
-// Xuất hàm handler dưới dạng CommonJS
-module.exports = handler;

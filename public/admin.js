@@ -1,9 +1,11 @@
+// admin.js (Sử dụng ESM)
+
 const STUDENTS_URL = '/data/students.json';  // Đảm bảo đúng URL
 
 let studentsData = {};  // Biến để lưu dữ liệu học sinh
 
 // Tải danh sách học sinh
-async function loadStudents() {
+export async function loadStudents() {
     try {
         const response = await fetch(STUDENTS_URL);
         if (!response.ok) throw new Error("Không thể tải danh sách học sinh.");
@@ -30,7 +32,7 @@ function displayStudentList() {
 }
 
 // Xóa học sinh khỏi danh sách
-async function deleteStudent(studentId) {
+export async function deleteStudent(studentId) {
     try {
         delete studentsData[studentId];  // Xóa học sinh từ dữ liệu
         await saveStudents();  // Lưu lại danh sách sau khi xóa

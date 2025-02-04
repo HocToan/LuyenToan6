@@ -1,9 +1,15 @@
-document.addEventListener('DOMContentLoaded', () => {
-    checkTeacherLogin();
-});
+// teacher.js (Sử dụng ESM)
+
+// Kiểm tra trạng thái đăng nhập giáo viên
+export function checkTeacherLogin() {
+    if (localStorage.getItem("teacherLoggedIn") === "true") {
+        document.getElementById('teacherLogin').style.display = 'none';
+        document.getElementById('teacherPanel').style.display = 'block';
+    }
+}
 
 // 🚀 Đăng nhập giáo viên
-function loginTeacher() {
+export function loginTeacher() {
     const password = document.getElementById('teacherPassword').value;
     if (password === "admin123") { // 🔑 Thay bằng mật khẩu bảo mật hơn
         localStorage.setItem("teacherLoggedIn", "true");
@@ -14,16 +20,8 @@ function loginTeacher() {
     }
 }
 
-// 🚀 Kiểm tra trạng thái đăng nhập giáo viên
-function checkTeacherLogin() {
-    if (localStorage.getItem("teacherLoggedIn") === "true") {
-        document.getElementById('teacherLogin').style.display = 'none';
-        document.getElementById('teacherPanel').style.display = 'block';
-    }
-}
-
 // 🚀 Tải danh sách học sinh
-async function fetchStudents() {
+export async function fetchStudents() {
     try {
         const response = await fetch('/api/get-students');
         const students = await response.json();
@@ -44,7 +42,7 @@ async function fetchStudents() {
 }
 
 // 🚀 Thêm học sinh mới
-async function addStudent() {
+export async function addStudent() {
     const id = document.getElementById('newStudentId').value;
     const name = document.getElementById('newStudentName').value;
     if (!id || !name) {
@@ -63,7 +61,7 @@ async function addStudent() {
 }
 
 // 🚀 Xóa học sinh
-async function deleteStudent(studentId) {
+export async function deleteStudent(studentId) {
     let students = await fetch('/api/get-students').then(res => res.json());
     students = students.filter(student => student.id !== studentId);
     await fetch('/api/save-students', {
@@ -76,7 +74,7 @@ async function deleteStudent(studentId) {
 }
 
 // 🚀 Tải danh sách bài tập
-async function fetchProblems() {
+export async function fetchProblems() {
     const problems = await fetch('/api/get-problems').then(res => res.json());
     const tableBody = document.querySelector("#problemsTable tbody");
     tableBody.innerHTML = "";
@@ -91,7 +89,7 @@ async function fetchProblems() {
 }
 
 // 🚀 Thêm bài tập
-async function addProblem() {
+export async function addProblem() {
     const text = document.getElementById('newProblemText').value;
     if (!text) {
         alert("⚠ Vui lòng nhập nội dung bài tập.");
@@ -107,3 +105,8 @@ async function addProblem() {
     alert("✅ Bài tập đã được thêm!");
     fetchProblems();
 }
+
+// Đảm bảo chạy khi DOM đã tải xong
+document.addEventListener('DOMContentLoaded', () => {
+    checkTeacherLogin();
+});

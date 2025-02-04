@@ -220,12 +220,25 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         Đề bài:
         ${problemText}
         Hãy thực hiện các bước sau:
-        1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác...
-        2. Giải bài toán và cung cấp lời giải chi tiết...
-        3. So sánh bài làm của học sinh với đáp án đúng...
-        4. Chấm điểm bài làm của học sinh trên thang điểm 10...
-        5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
-    `;
+            1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
+            2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
+            3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
+            4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
+            5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
+            6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
+            Kết quả trả về cần có định dạng sau:
+            Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
+            Lời giải chi tiết: [Lời giải từng bước]
+            Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
+            Điểm số: [Điểm trên thang điểm 10]
+            Nhận xét: [Nhận xét chi tiết]
+            Đề xuất cải thiện: [Các đề xuất cụ thể]
+            Chú ý:
+	    - Bài làm của học sinh không khớp với đề bài thì cho 0 điểm,
+            - Điểm số phải là một số từ 0 đến 10, có thể có một chữ số thập phân.
+            - Hãy đảm bảo tính chính xác và khách quan trong việc chấm điểm và nhận xét.
+            - Nếu có sự không nhất quán giữa bài làm và điểm số, hãy giải thích rõ lý do.
+            `;
     const requestBody = {
         contents: [
             {
@@ -243,15 +256,30 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         if (!response) {
             throw new Error('Không nhận được phản hồi hợp lệ từ API');
         }
+
+        // Tách các phần của bài làm học sinh và phần chấm điểm
         const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
         const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
         const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-        return { studentAnswer, feedback, score };
+
+        // Kết hợp tất cả kết quả thành một chuỗi duy nhất
+        const resultContent = `
+            <strong>Bài làm của học sinh:</strong><br>${studentAnswer}<br><br>
+            <strong>Lời giải chi tiết:</strong><br>${feedback}<br><br>
+            <strong>Điểm số:</strong> ${score}/10<br><br>
+            <strong>Nhận xét:</strong><br> ${response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1] || ''}<br><br>
+            <strong>Đề xuất cải thiện:</strong><br> ${response.match(/Đề xuất cải thiện: ([\s\S]*)/)?.[1] || ''}
+        `;
+
+        // Cập nhật nội dung vào div kết quả
+        document.getElementById("result").innerHTML = resultContent;
+
     } catch (error) {
         console.error('Lỗi:', error);
-        return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
+        document.getElementById('result').innerHTML = `Đã xảy ra lỗi: ${error.message}`;
     }
 }
+
 
 // Hàm khi nhấn nút "Chấm bài"
 document.getElementById("submitBtn").addEventListener("click", async () => {

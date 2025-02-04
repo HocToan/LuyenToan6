@@ -218,28 +218,14 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
     const promptText = `
         Học sinh: ${studentId}
-        Đề bài:
-        ${problemText}
-         Hãy thực hiện các bước sau:
-            1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
-            2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
-            3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
-            4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
-            5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
-            6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
-            Kết quả trả về cần có định dạng sau:
-            Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
-            Lời giải chi tiết: [Lời giải từng bước]
-            Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
-            Điểm số: [Điểm trên thang điểm 10]
-            Nhận xét: [Nhận xét chi tiết]
-            Đề xuất cải thiện: [Các đề xuất cụ thể]
-            Chú ý:
-	    - Bài làm của học sinh không khớp với đề bài thì cho 0 điểm,
-            - Điểm số phải là một số từ 0 đến 10, có thể có một chữ số thập phân.
-            - Hãy đảm bảo tính chính xác và khách quan trong việc chấm điểm và nhận xét.
-            - Nếu có sự không nhất quán giữa bài làm và điểm số, hãy giải thích rõ lý do.
-            `;
+        Đề bài: ${problemText}
+        Hãy thực hiện các bước sau:
+        1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
+        2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
+        3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
+        4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
+        5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
+    `;
     const requestBody = {
         contents: [
             {
@@ -258,21 +244,35 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
             throw new Error('Không nhận được phản hồi hợp lệ từ API');
         }
 
-        // Phân tách các phần trong kết quả trả về
+        // Tách các phần từ phản hồi
         const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
-        const feedback = response.match(/Lời giải chi tiết: ([\s\S]*?)(?=\nChấm điểm:)/)?.[1]?.trim() || '';
-        const scoreExplanation = response.match(/Chấm điểm: ([\s\S]*?)(?=\nĐiểm số:)/)?.[1]?.trim() || '';
+        const solution = response.match(/Lời giải chi tiết: ([\s\S]*?)(?=\nChấm điểm:)/)?.[1]?.trim() || '';
+        const gradingExplanation = response.match(/Chấm điểm: ([\s\S]*?)(?=\nĐiểm số:)/)?.[1]?.trim() || '';
         const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-        const comments = response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1]?.trim() || '';
-        const improvementSuggestions = response.match(/Đề xuất cải thiện: ([\s\S]*)/)?.[1]?.trim() || '';
+        const feedback = response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1]?.trim() || '';
+        const improvementSuggestions = response.match(/Đề xuất cải thiện: ([\s\S]*)$/)?.[1]?.trim() || '';
 
-        return { studentAnswer, feedback, scoreExplanation, score, comments, improvementSuggestions };
+        return {
+            studentAnswer,
+            solution,
+            gradingExplanation,
+            score,
+            feedback,
+            improvementSuggestions
+        };
+
     } catch (error) {
         console.error('Lỗi:', error);
-        return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
+        return {
+            studentAnswer: '',
+            solution: '',
+            gradingExplanation: '',
+            score: 0,
+            feedback: `Đã xảy ra lỗi: ${error.message}`,
+            improvementSuggestions: ''
+        };
     }
 }
-
 document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!currentProblem) {
         alert("⚠ Vui lòng chọn bài tập trước khi chấm.");
@@ -300,19 +300,16 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     try {
         document.getElementById("result").innerText = "🔄 Đang chấm bài...";
 
-        const { studentAnswer, feedback, scoreExplanation, score, comments, improvementSuggestions } = await gradeWithGemini(base64Image, problemText, studentId);
-        
-        // Hiển thị kết quả chi tiết
-        document.getElementById("result").innerHTML = `
-            <b>Bài làm của học sinh:</b> <pre>${studentAnswer}</pre>
-            <b>Lời giải chi tiết:</b> <pre>${feedback}</pre>
-            <b>Chấm điểm:</b> <pre>${scoreExplanation}</pre>
-            <b>Điểm số:</b> ${score} / 10
-            <b>Nhận xét:</b> <pre>${comments}</pre>
-            <b>Đề xuất cải thiện:</b> <pre>${improvementSuggestions}</pre>
-        `;
+        // Gọi hàm gradeWithGemini và lấy các phần chi tiết
+        const { studentAnswer, solution, gradingExplanation, score, feedback, improvementSuggestions } = await gradeWithGemini(base64Image, problemText, studentId);
 
-        MathJax.typesetPromise([document.getElementById("result")]).catch(err => console.error("MathJax lỗi:", err));
+        // Hiển thị chi tiết kết quả
+        document.getElementById("studentAnswer").innerText = studentAnswer || "Không có bài làm của học sinh.";
+        document.getElementById("solution").innerText = solution || "Không có lời giải chi tiết.";
+        document.getElementById("gradingExplanation").innerText = gradingExplanation || "Không có giải thích chấm điểm.";
+        document.getElementById("score").innerText = `Điểm số: ${score}/10`;
+        document.getElementById("feedback").innerText = feedback || "Không có nhận xét.";
+        document.getElementById("improvementSuggestions").innerText = improvementSuggestions || "Không có đề xuất cải thiện.";
 
         alert(`✅ Bài tập đã được chấm! Bạn đạt ${score}/10 điểm.`);
         progressData[currentProblem.index] = true;

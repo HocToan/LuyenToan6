@@ -220,13 +220,26 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         Học sinh: ${studentId}
         Đề bài:
         ${problemText}
-        Hãy thực hiện các bước sau:
-        1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác...
-        2. Giải bài toán và cung cấp lời giải chi tiết...
-        3. So sánh bài làm của học sinh với đáp án đúng...
-        4. Chấm điểm bài làm của học sinh trên thang điểm 10...
-        5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
-    `;
+         Hãy thực hiện các bước sau:
+            1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
+            2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
+            3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
+            4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
+            5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
+            6. Kiểm tra lại kết quả chấm điểm và đảm bảo tính nhất quán giữa bài làm, lời giải, và điểm số.
+            Kết quả trả về cần có định dạng sau:
+            Bài làm của học sinh: [Bài làm được nhận diện từ hình ảnh]
+            Lời giải chi tiết: [Lời giải từng bước]
+            Chấm điểm: [Giải thích cách chấm điểm cho từng phần]
+            Điểm số: [Điểm trên thang điểm 10]
+            Nhận xét: [Nhận xét chi tiết]
+            Đề xuất cải thiện: [Các đề xuất cụ thể]
+            Chú ý:
+	    - Bài làm của học sinh không khớp với đề bài thì cho 0 điểm,
+            - Điểm số phải là một số từ 0 đến 10, có thể có một chữ số thập phân.
+            - Hãy đảm bảo tính chính xác và khách quan trong việc chấm điểm và nhận xét.
+            - Nếu có sự không nhất quán giữa bài làm và điểm số, hãy giải thích rõ lý do.
+            `;
     const requestBody = {
         contents: [
             {

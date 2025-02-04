@@ -1,8 +1,5 @@
-// api/get-problems.js (Sử dụng CommonJS)
-
-const fetch = require('node-fetch');  // Đảm bảo đã cài đặt node-fetch nếu chưa có
-
-async function handler(req, res) {
+// api/get-problems.js (Sử dụng ESM)
+export default async function handler(req, res) {
     try {
         // Giả sử bạn có một file problems.json trong thư mục data trên GitHub hoặc trong thư mục public
         const response = await fetch('https://raw.githubusercontent.com/OnToanAnhDuong/LuyenToan6/main/data/problems.json');
@@ -14,6 +11,3 @@ async function handler(req, res) {
         res.status(500).json({ message: 'Lỗi khi lấy bài tập' });
     }
 }
-
-// Xuất hàm handler dưới dạng CommonJS
-module.exports = handler;

@@ -1,9 +1,5 @@
-// api/save-students.js (Sử dụng CommonJS)
-
-const fetch = require('node-fetch');  // Dùng require để nhập thư viện
-const { stringify } = require('flatted'); // Nếu cần xử lý vòng lặp
-
-async function handler(req, res) {
+// api/save-students.js (Sử dụng ESM)
+export default async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Only POST method is allowed" });
     }
@@ -19,22 +15,18 @@ async function handler(req, res) {
     const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
 
     try {
-        // Lấy dữ liệu file hiện tại từ GitHub
         const fileResponse = await fetch(apiUrl, {
             headers: { Authorization: `token ${githubToken}` }
         });
 
         const fileData = await fileResponse.json();
         const sha = fileData.sha || null;
-        let studentList = fileData.content ? JSON.parse(Buffer.from(fileData.content, 'base64').toString('utf-8')) : {};
+        let studentList = fileData.content ? JSON.parse(atob(fileData.content)) : {};
 
-        // Cập nhật danh sách học sinh
         studentList[studentId] = { studentName };
 
-        // Mã hóa lại dữ liệu danh sách học sinh thành base64
         const updatedContent = Buffer.from(JSON.stringify(studentList, null, 2)).toString("base64");
 
-        // Cập nhật nội dung lên GitHub
         const response = await fetch(apiUrl, {
             method: "PUT",
             headers: {
@@ -56,6 +48,3 @@ async function handler(req, res) {
         return res.status(500).json({ error: "Failed to update student list" });
     }
 }
-
-// Xuất hàm handler dưới dạng CommonJS
-module.exports = handler;

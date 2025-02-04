@@ -286,6 +286,7 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         };
     }
 }
+// Hàm khi nhấn nút "Chấm bài"
 document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!currentProblem) {
         alert("⚠ Vui lòng chọn bài tập trước khi chấm.");
@@ -313,16 +314,12 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     try {
         document.getElementById("result").innerText = "🔄 Đang chấm bài...";
 
-        // Gọi hàm gradeWithGemini và lấy các phần chi tiết
-        const { studentAnswer, solution, gradingExplanation, score, feedback, improvementSuggestions } = await gradeWithGemini(base64Image, problemText, studentId);
+        // Gọi lại hàm gradeWithGemini đã có
+        const { studentAnswer, feedback, score } = await gradeWithGemini(base64Image, problemText, studentId);
+        await saveProgress(studentId, score);
 
-        // Hiển thị chi tiết kết quả
-        document.getElementById("studentAnswer").innerText = studentAnswer || "Không có bài làm của học sinh.";
-        document.getElementById("solution").innerText = solution || "Không có lời giải chi tiết.";
-        document.getElementById("gradingExplanation").innerText = gradingExplanation || "Không có giải thích chấm điểm.";
-        document.getElementById("score").innerText = `Điểm số: ${score}/10`;
-        document.getElementById("feedback").innerText = feedback || "Không có nhận xét.";
-        document.getElementById("improvementSuggestions").innerText = improvementSuggestions || "Không có đề xuất cải thiện.";
+        document.getElementById("result").innerHTML = feedback;
+        MathJax.typesetPromise([document.getElementById("result")]).catch(err => console.error("MathJax lỗi:", err));
 
         alert(`✅ Bài tập đã được chấm! Bạn đạt ${score}/10 điểm.`);
         progressData[currentProblem.index] = true;

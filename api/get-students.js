@@ -1,6 +1,8 @@
-import { Octokit } from "@octokit/rest";
+// api/get-students.js (Sử dụng CommonJS)
 
-export default async function handler(req, res) {
+const { Octokit } = require("@octokit/rest");  // Dùng require thay cho import
+
+async function handler(req, res) {
     try {
         const githubToken = process.env.GITHUB_TOKEN;
         if (!githubToken) {
@@ -29,3 +31,6 @@ export default async function handler(req, res) {
         res.status(500).json({ error: "❌ Không thể tải danh sách học sinh." });
     }
 }
+
+// Xuất hàm handler dưới dạng CommonJS
+module.exports = handler;

@@ -1,12 +1,4 @@
-const PROGRESS_URL = '/data/progress.json';
-
-// Tải tiến trình học sinh
-async function loadProgress() {
-    try {
-        const response = await fetch(PROGRESS_URL);
-        progressData = await response.json();
-    } catch (error) {
-        console.error('❌ Lỗi tải tiến trình:', error);// progress.js (Sử dụng ESM)
+// progress.js (Sử dụng ESM)
 
 const PROGRESS_URL = '/data/progress.json'; // Đảm bảo đúng URL của tiến trình
 
@@ -31,18 +23,6 @@ export async function updateStudentProgress(studentId, score) {
     }
 
     progressData[studentId].completed++;
-    progressData[studen
-
-    }
-}
-
-// Cập nhật điểm số học sinh
-async function updateStudentProgress(studentId, score) {
-    if (!progressData[studentId]) {
-        progressData[studentId] = { completed: 0, totalScore: 0, averageScore: 0, problems: [] };
-    }
-
-    progressData[studentId].completed++;
     progressData[studentId].totalScore += score;
     progressData[studentId].averageScore = progressData[studentId].totalScore / progressData[studentId].completed;
     
@@ -50,7 +30,7 @@ async function updateStudentProgress(studentId, score) {
 }
 
 // Lưu tiến trình vào JSON
-async function saveProgress() {
+export async function saveProgress() {
     try {
         await fetch('/api/save-progress', {
             method: 'POST',
@@ -61,4 +41,3 @@ async function saveProgress() {
         console.error('❌ Lỗi lưu tiến trình:', error);
     }
 }
-

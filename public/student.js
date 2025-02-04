@@ -1,5 +1,7 @@
-// Import API keys từ get-api-keys.js
-import apiKeys from '../api/get-api-keys.js';  // Đảm bảo đường dẫn đúng với cấu trúc dự án của bạn
+// student.js
+
+// Import API keys từ get-api-keys.js (Sử dụng CommonJS)
+const apiKeys = require('../api/get-api-keys');  // Đảm bảo đường dẫn đúng với cấu trúc dự án của bạn
 
 let currentKeyIndex = 0;  // Biến để theo dõi API key đang sử dụng
 
@@ -9,7 +11,9 @@ if (apiKeys.length === 0) {
 } else {
     console.log(`Có ${apiKeys.length} API keys hợp lệ.`);
 }
+
 let base64Image = ""; // 🌟 Biến toàn cục để lưu ảnh bài làm
+
 document.addEventListener("DOMContentLoaded", async function () {
     await initStudentPage();
 });
@@ -38,7 +42,6 @@ const loadStudentData = async (studentId) => {
         }
         const studentsObject = await response.json();  // Lấy dữ liệu từ API
 
-        // Chuyển đối tượng JSON thành mảng
         const students = Object.keys(studentsObject).map(key => ({
             id: key,
             name: studentsObject[key].name,
@@ -47,20 +50,16 @@ const loadStudentData = async (studentId) => {
 
         console.log("✅ Danh sách học sinh:", students);
 
-        // Kiểm tra xem danh sách có hợp lệ không
         if (!Array.isArray(students) || students.length === 0) {
             throw new Error("Dữ liệu học sinh không phải là mảng hoặc rỗng!");
         }
 
-        return students; // Trả về danh sách học sinh đã chuyển đổi
+        return students;
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách học sinh:", error);
-        return [];  // Trả về mảng rỗng để tránh lỗi khi xử lý tiếp
+        return [];
     }
 };
-
-// 🌟 2. Hàm tải danh sách bài tập từ `problems.json`
-let progressData = {};
 
 // 🌟 2. Hàm tải danh sách bài tập từ `problems.json`
 const loadProblems = async () => {
@@ -71,11 +70,12 @@ const loadProblems = async () => {
         }
         const problems = await response.json();
         console.log("✅ Danh sách bài tập:", problems);
-        displayProblemList(problems); // Hiển thị bài tập lên giao diện
+        displayProblemList(problems);
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách bài tập:", error);
     }
 };
+
 // 🌟 3. Hiển thị danh sách bài tập
 function displayProblemList(problems) {
     const problemContainer = document.getElementById("problemList");
@@ -83,13 +83,11 @@ function displayProblemList(problems) {
     
     problems.forEach(problem => {
         const problemBox = document.createElement("div");
-        problemBox.textContent = problem.index; // Chỉ hiển thị số bài tập
+        problemBox.textContent = problem.index;
         problemBox.className = "problem-box";
         problemBox.dataset.id = problem.index;
 
-        // Màu sắc trạng thái bài tập
         function updateProblemColor() {
-            // Kiểm tra nếu progressData đã có dữ liệu trước khi sử dụng
             if (progressData[problem.index]) {
                 problemBox.style.backgroundColor = "green"; // Bài đã làm
             } else {
@@ -97,7 +95,7 @@ function displayProblemList(problems) {
             }
         }
 
-        updateProblemColor(); // Áp dụng màu sắc
+        updateProblemColor();
 
         problemBox.addEventListener("click", async () => {
             if (progressData[problem.index]) {
@@ -119,7 +117,6 @@ function displayProblem(problem) {
     currentProblem = problem; // Lưu bài tập hiện tại
     MathJax.typesetPromise([document.getElementById("problemText")]).catch(err => console.error("MathJax lỗi:", err));
 }
-
 
 // 🌟 5. Tải tiến trình học sinh từ `progress.json`
 async function loadProgress(studentId) {
@@ -156,13 +153,11 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
         return;
     }
 
-    // 📌 Kiểm tra nếu học sinh đã tải ảnh lên hoặc chụp ảnh từ camera
     if (!base64Image && studentFileInput.files.length === 0) {
         alert("⚠ Vui lòng tải lên ảnh bài làm hoặc chụp ảnh từ camera.");
         return;
     }
 
-    // ✅ Nếu chưa có base64Image (chưa chụp từ camera), lấy từ file ảnh
     if (!base64Image && studentFileInput.files.length > 0) {
         base64Image = await getBase64(studentFileInput.files[0]);
     }
@@ -170,16 +165,14 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     try {
         document.getElementById("result").innerText = "🔄 Đang chấm bài...";
 
-        // 📌 Gửi ảnh và đề bài cho AI chấm bài
         const { studentAnswer, feedback, score } = await gradeWithGemini(base64Image, problemText, studentId);
         await saveProgress(studentId, score);
 
-        // 📌 Hiển thị kết quả chấm bài
         document.getElementById("result").innerHTML = feedback;
         MathJax.typesetPromise([document.getElementById("result")]).catch(err => console.error("MathJax lỗi:", err));
 
         alert(`✅ Bài tập đã được chấm! Bạn đạt ${score}/10 điểm.`);
-        progressData[currentProblem.index] = true; // Đánh dấu bài đã làm
+        progressData[currentProblem.index] = true;
         updateProgressUI();
     } catch (error) {
         console.error("❌ Lỗi khi chấm bài:", error);
@@ -219,63 +212,10 @@ function getBase64(file) {
         reader.onerror = error => reject(error);
     });
 }
+
 // Hàm lấy API key tiếp theo từ danh sách
 function getNextApiKey() {
-    const apiKey = API_KEYS[currentKeyIndex];
-    currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;  // Lấy API key tiếp theo theo chu kỳ
+    const apiKey = apiKeys[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
     return apiKey;
 }
-async function gradeWithGemini(base64Image, problemText, studentId) {
-    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
-    const promptText = `
-    Học sinh: ${studentId}
-    Đề bài:
-    ${problemText}
-    
-    Hãy thực hiện các bước sau:
-    1. Nhận diện và gõ lại bài làm từ hình ảnh (định dạng Toán học giữ nguyên).
-    2. Giải bài toán đúng theo chương trình lớp 6.
-    3. So sánh bài làm học sinh với đáp án đúng.
-    4. Chấm điểm từ 0 đến 10.
-    5. Đưa ra nhận xét cải thiện.
-
-    Trả về kết quả theo định dạng:
-    - **Bài làm của học sinh:** [...]
-    - **Lời giải chi tiết:** [...]
-    - **Chấm điểm:** [...]
-    - **Điểm số:** [...]
-    - **Nhận xét:** [...]
-    `;
-
-    const requestBody = {
-        contents: [
-            { parts: [{ text: promptText }, { inline_data: { mime_type: "image/jpeg", data: base64Image } }] }
-        ]
-    };
-
-    try {
-        const response = await fetch(`${apiUrl}?key=${getNextApiKey()}`, {  // Gọi hàm lấy API key
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody)
-        });
-
-        const data = await response.json();
-        const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!responseText) {
-            throw new Error("Không nhận được phản hồi hợp lệ từ AI.");
-        }
-
-        const studentAnswer = responseText.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
-        const feedback = responseText.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
-        const score = parseFloat(responseText.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-
-        return { studentAnswer, feedback, score };
-    } catch (error) {
-        console.error("❌ Lỗi chấm bài với Gemini:", error);
-        return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
-    }
-}
-
-

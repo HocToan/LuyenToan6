@@ -67,7 +67,7 @@ async function makeApiRequest(apiUrl, requestBody) {
 // Tải danh sách bài tập từ JSON
 async function fetchProblems() {
     try {
-        const response = await fetch(GITHUB_PROGRESS_URL);
+        const response = await fetch(GET_PROGRESS_URL); // Sử dụng URL từ cấu hình
         if (!response.ok) throw new Error('Failed to fetch problems.');
 
         const data = await response.json();
@@ -154,7 +154,7 @@ async function saveProgress() {
     const averageScore = completedExercises > 0 ? (totalScore / completedExercises).toFixed(2) : 0;
 
     try {
-        const response = await fetch(GITHUB_SAVE_PROGRESS_URL, {
+        const response = await fetch(SAVE_PROGRESS_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ studentId: currentStudentId, progressData, completedExercises, averageScore })
@@ -184,6 +184,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     await saveProgress();
     await displayProblemList();
 });
+
 // 📌 XỬ LÝ SỰ KIỆN ĐĂNG NHẬP
 document.getElementById("loginBtn").addEventListener("click", async () => {
     const studentId = document.getElementById("studentId").value.trim();
@@ -197,7 +198,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
     try {
         // Gọi API lấy danh sách học sinh
-        const response = await fetch("/api/get-students");
+        const response = await fetch(GET_STUDENTS_URL);
         if (!response.ok) {
             throw new Error("❌ Không thể tải danh sách học sinh.");
         }
@@ -234,4 +235,3 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
         alert("❌ Đã xảy ra lỗi. Vui lòng thử lại sau.");
     }
 });
-

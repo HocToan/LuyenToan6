@@ -1,13 +1,11 @@
-// api/get-api-keys.js (sử dụng CommonJS)
+// api/get-api-keys.js (Sử dụng ESM)
 
-// Hàm xử lý yêu cầu GET API
-async function handler(req, res) {
+export default async function handler(req, res) {
     if (req.method !== "GET") {
         return res.status(405).json({ error: "Only GET method is allowed" });
     }
 
     try {
-        // Lấy các API keys từ biến môi trường và lọc ra những key hợp lệ
         const apiKeys = [
             process.env.API_K1, process.env.API_K2, process.env.API_K3,
             process.env.API_K4, process.env.API_K5, process.env.API_K6,
@@ -19,13 +17,9 @@ async function handler(req, res) {
             return res.status(500).json({ error: "No API keys available" });
         }
 
-        // Trả về các API keys hợp lệ
         return res.status(200).json({ apiKeys });
     } catch (error) {
         console.error("❌ Error retrieving API keys:", error);
         return res.status(500).json({ error: "Failed to retrieve API keys" });
     }
 }
-
-// Xuất hàm handler bằng module.exports
-module.exports = handler;

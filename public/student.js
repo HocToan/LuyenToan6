@@ -1,39 +1,35 @@
 // student.js (Sử dụng ESM)
 
-import { apiKeys } from '../api/get-api-keys.js';  // Đảm bảo đường dẫn đúng với cấu trúc dự án của bạn
-
 let currentKeyIndex = 0;  // Biến để theo dõi API key đang sử dụng
-
-// Kiểm tra xem có API keys hợp lệ không
-if (apiKeys.length === 0) {
-    console.error("Không có API keys hợp lệ.");
-} else {
-    console.log(`Có ${apiKeys.length} API keys hợp lệ.`);
-}
+let apiKeys = [];  // Biến lưu API keys
 
 let base64Image = ""; // Biến toàn cục để lưu ảnh bài làm
+let progressData = {}; // Biến lưu tiến trình học sinh
+let currentProblem = null; // Biến lưu bài tập hiện tại
 
-document.addEventListener("DOMContentLoaded", async function () {
-    await initStudentPage();
-});
+// Tải API keys từ server
+async function loadApiKeys() {
+    try {
+        const response = await fetch('/api/get-api-keys'); // Gọi API get-api-keys
+        if (!response.ok) {
+            throw new Error('Không thể tải API keys');
+        }
+        const data = await response.json();
+        apiKeys = data.apiKeys;  // Lấy dữ liệu API keys
+        console.log('API Keys:', apiKeys);
 
-async function initStudentPage() {
-    const studentId = localStorage.getItem("studentId");
-    if (!studentId) {
-        alert("⚠ Bạn chưa đăng nhập! Vui lòng đăng nhập lại.");
-        window.location.href = "index.html"; // Chuyển hướng về trang đăng nhập
-        return;
+        if (apiKeys.length === 0) {
+            console.error("Không có API keys hợp lệ.");
+        } else {
+            console.log(`Có ${apiKeys.length} API keys hợp lệ.`);
+        }
+    } catch (error) {
+        console.error('Lỗi khi tải API keys:', error);
     }
-
-    console.log(`🔹 Đang tải dữ liệu học sinh: ${studentId}`);
-    await loadStudentData(studentId);
-    await loadProblems();
-    await loadProgress(studentId);
-    console.log("✅ Trang học sinh đã khởi tạo hoàn tất!");
 }
 
-// Hàm tải dữ liệu học sinh từ `students.json`
-const loadStudentData = async (studentId) => {
+// Tải dữ liệu học sinh
+async function loadStudentData(studentId) {
     try {
         const response = await fetch('/api/get-students');
         if (!response.ok) {
@@ -48,20 +44,15 @@ const loadStudentData = async (studentId) => {
         }));
 
         console.log("✅ Danh sách học sinh:", students);
-
-        if (!Array.isArray(students) || students.length === 0) {
-            throw new Error("Dữ liệu học sinh không phải là mảng hoặc rỗng!");
-        }
-
         return students;
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách học sinh:", error);
         return [];
     }
-};
+}
 
-// Hàm tải danh sách bài tập từ `problems.json`
-const loadProblems = async () => {
+// Tải danh sách bài tập
+async function loadProblems() {
     try {
         const response = await fetch('/api/get-problems');
         if (!response.ok) {
@@ -73,13 +64,13 @@ const loadProblems = async () => {
     } catch (error) {
         console.error("❌ Lỗi khi tải danh sách bài tập:", error);
     }
-};
+}
 
 // Hiển thị danh sách bài tập
 function displayProblemList(problems) {
     const problemContainer = document.getElementById("problemList");
     problemContainer.innerHTML = ""; // Xóa danh sách cũ nếu có
-    
+
     problems.forEach(problem => {
         const problemBox = document.createElement("div");
         problemBox.textContent = problem.index;
@@ -117,7 +108,7 @@ function displayProblem(problem) {
     MathJax.typesetPromise([document.getElementById("problemText")]).catch(err => console.error("MathJax lỗi:", err));
 }
 
-// Tải tiến trình học sinh từ `progress.json`
+// Tải tiến trình học sinh
 async function loadProgress(studentId) {
     try {
         const response = await fetch(`/api/get-progress?studentId=${studentId}`);
@@ -130,7 +121,7 @@ async function loadProgress(studentId) {
     }
 }
 
-// Cập nhật tiến trình UI (số bài đã làm & điểm TB)
+// Cập nhật tiến trình UI
 function updateProgressUI() {
     document.getElementById("completedExercises").textContent = progressData.completedExercises || 0;
     document.getElementById("averageScore").textContent = progressData.averageScore || 0;
@@ -218,3 +209,8 @@ function getNextApiKey() {
     currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
     return apiKey;
 }
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await loadApiKeys(); // Tải API keys khi trang được tải
+    await initStudentPage();
+});

@@ -213,17 +213,17 @@ async function makeApiRequest(apiUrl, requestBody) {
     throw new Error('All API keys exhausted.');
 }
 // Hàm gọi API Gemini để chấm bài
-// Hàm gọi API Gemini để chấm bài
 async function gradeWithGemini(base64Image, problemText, studentId) {
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-002:generateContent';
     const promptText = `
         Học sinh: ${studentId}
-        Đề bài: ${problemText}
+        Đề bài:
+        ${problemText}
         Hãy thực hiện các bước sau:
-        1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác, tất cả công thức Toán viết dưới dạng Latex, bọc trong dấu $, không tự suy luận nội dung hình ảnh, chỉ gõ lại chính xác các nội dung nhận diện được từ hình ảnh
-        2. Giải bài toán và cung cấp lời giải chi tiết cho từng phần, lời giải phù hợp học sinh lớp 7 học theo chương trình 2018.
-        3. So sánh bài làm của học sinh với đáp án đúng, chấm chi tiết từng bước làm đến kết quả
-        4. Chấm điểm bài làm của học sinh trên thang điểm 10, cho 0 điểm với bài giải không đúng yêu cầu đề bài. Giải thích chi tiết cách tính điểm cho từng phần.
+        1. Nhận diện và gõ lại bài làm của học sinh từ hình ảnh thành văn bản một cách chính xác...
+        2. Giải bài toán và cung cấp lời giải chi tiết...
+        3. So sánh bài làm của học sinh với đáp án đúng...
+        4. Chấm điểm bài làm của học sinh trên thang điểm 10...
         5. Đưa ra nhận xét chi tiết và đề xuất cải thiện.
     `;
     const requestBody = {
@@ -243,36 +243,16 @@ async function gradeWithGemini(base64Image, problemText, studentId) {
         if (!response) {
             throw new Error('Không nhận được phản hồi hợp lệ từ API');
         }
-
-        // Tách các phần từ phản hồi
         const studentAnswer = response.match(/Bài làm của học sinh: ([\s\S]*?)(?=\nLời giải chi tiết:)/)?.[1]?.trim() || '';
-        const solution = response.match(/Lời giải chi tiết: ([\s\S]*?)(?=\nChấm điểm:)/)?.[1]?.trim() || '';
-        const gradingExplanation = response.match(/Chấm điểm: ([\s\S]*?)(?=\nĐiểm số:)/)?.[1]?.trim() || '';
+        const feedback = response.replace(/Bài làm của học sinh: [\s\S]*?\n/, '');
         const score = parseFloat(response.match(/Điểm số: (\d+(\.\d+)?)/)?.[1] || '0');
-        const feedback = response.match(/Nhận xét: ([\s\S]*?)(?=\nĐề xuất cải thiện:)/)?.[1]?.trim() || '';
-        const improvementSuggestions = response.match(/Đề xuất cải thiện: ([\s\S]*)$/)?.[1]?.trim() || '';
-
-        return {
-            studentAnswer,
-            solution,
-            gradingExplanation,
-            score,
-            feedback,
-            improvementSuggestions
-        };
-
+        return { studentAnswer, feedback, score };
     } catch (error) {
         console.error('Lỗi:', error);
-        return {
-            studentAnswer: '',
-            solution: '',
-            gradingExplanation: '',
-            score: 0,
-            feedback: `Đã xảy ra lỗi: ${error.message}`,
-            improvementSuggestions: ''
-        };
+        return { studentAnswer: '', feedback: `Đã xảy ra lỗi: ${error.message}`, score: 0 };
     }
 }
+
 // Hàm khi nhấn nút "Chấm bài"
 document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!currentProblem) {
@@ -299,8 +279,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     }
 
     try {
-        document.getElementById("result").innerText = "🔄 Đang chấm bài...";
-
+         document.getElementById("result").innerText = "🔄 Đang chấm bài...";
         // Gọi lại hàm gradeWithGemini đã có
         const { studentAnswer, feedback, score } = await gradeWithGemini(base64Image, problemText, studentId);
         await saveProgress(studentId, score);
